@@ -1,7 +1,11 @@
-package com.los.leagueofstats.utils;
+package com.los.leagueofstats.services.integration.riot.global;
 
+import com.los.leagueofstats.config.riot.RiotApiConfProps;
 import com.los.leagueofstats.services.integration.riot.global.exceptions.RiotApiException;
 import com.los.leagueofstats.services.integration.riot.global.exceptions.RiotExceptionMessageDto;
+import com.los.leagueofstats.utils.JsonUtil;
+import com.los.leagueofstats.utils.Region;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +24,10 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 @Log4j2
 @Component
+@RequiredArgsConstructor
 public class RiotApiHelper {
+
+    private final RiotApiConfProps riotApiConfProps;
 
     // <editor-fold defaultstate="collapsed" desc="*** URL Utils ***">
 
@@ -40,14 +47,10 @@ public class RiotApiHelper {
 
     public static final String RIOT_TOKEN_HEADER = "X-Riot-Token";
 
-    @Setter
-    @Value("${service.riot.api-key}")
-    private String riotApiToken;
-
     public HttpHeaders buildCommonRiotHeaders() {
         HttpHeaders headers = new HttpHeaders();
 
-        headers.add(RIOT_TOKEN_HEADER, riotApiToken);
+        headers.add(RIOT_TOKEN_HEADER, riotApiConfProps.getRiotApiToken());
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON_UTF8));
         headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
 
@@ -55,7 +58,6 @@ public class RiotApiHelper {
     }
 
     // </editor-fold>
-
 
     // <editor-fold defaultstate="collapsed" desc="*** EXCEPTION Utils ***">
 

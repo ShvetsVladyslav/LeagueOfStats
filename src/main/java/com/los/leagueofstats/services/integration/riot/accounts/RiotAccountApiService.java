@@ -3,7 +3,7 @@ package com.los.leagueofstats.services.integration.riot.accounts;
 import com.los.leagueofstats.config.rest.RestClient;
 import com.los.leagueofstats.services.integration.riot.accounts.dto.RiotAccountResDto;
 import com.los.leagueofstats.services.integration.riot.global.enums.RiotRegion;
-import com.los.leagueofstats.utils.RiotApiHelper;
+import com.los.leagueofstats.services.integration.riot.global.RiotApiHelper;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;

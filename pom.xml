@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.los</groupId>
 	<artifactId>leagueofstats</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>League of Stats</name>
 	<description>League of Stats</description>
 	<url/>
