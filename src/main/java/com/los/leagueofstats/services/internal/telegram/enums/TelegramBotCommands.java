@@ -8,12 +8,13 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public enum TelegramBotCommands {
-    START("/start");
+    START("/start"),
+    PROFILE("/profile");
 
-    private final String id;
+    private final String command;
 
-    private TelegramBotCommands(String id) {
-        this.id = id;
+    private TelegramBotCommands(String command) {
+        this.command = command;
     }
 
     /**
@@ -21,13 +22,13 @@ public enum TelegramBotCommands {
      *
      * @return id
      */
-    public String getId() {
-        return this.id;
+    public String getCommand() {
+        return this.command;
     }
 
     /** to get enum value by id */
     private static final Map<String, TelegramBotCommands> ID_INDEX = Stream.of(TelegramBotCommands.values())
-            .collect(ImmutableMap.toImmutableMap(TelegramBotCommands::getId, Function.identity()));
+            .collect(ImmutableMap.toImmutableMap(TelegramBotCommands::getCommand, Function.identity()));
 
     /**
      * Get enum value by id

@@ -1,34 +1,39 @@
 package com.los.leagueofstats.services.internal.telegram;
 
 import com.los.leagueofstats.config.telegram.TelegramBotConfProps;
-import com.los.leagueofstats.services.internal.telegram.commands.BotCommandHandler;
+import com.los.leagueofstats.services.internal.telegram.commands.ProfileCommandHandler;
+import com.los.leagueofstats.services.internal.telegram.commands.StartCommandHandler;
 import com.los.leagueofstats.services.internal.telegram.enums.TelegramBotCommands;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Log4j2
 @Component
 public class RiotStatsBot extends TelegramLongPollingBot {
 
-    private final TelegramBotConfProps props;
-    private final Map<TelegramBotCommands, BotCommandHandler> handlers;
+    // <editor-fold defaultstate="collapsed" desc="*** Util elements ***">
 
-    public RiotStatsBot(TelegramBotConfProps props,
-                        List<BotCommandHandler> handlerList) {
+
+
+    // </editor-fold>
+
+    private final StartCommandHandler startCommandHandler;
+    private final ProfileCommandHandler profileCommandHandler;
+    private final TelegramBotConfProps props;
+
+    // <editor-fold defaultstate="collapsed" desc="*** Init and setters ***">
+
+    public RiotStatsBot(StartCommandHandler startCommandHandler,
+                        ProfileCommandHandler profileCommandHandler,
+                        TelegramBotConfProps props) {
+        this.startCommandHandler = startCommandHandler;
+        this.profileCommandHandler = profileCommandHandler;
         this.props = props;
-        this.handlers = handlerList.stream()
-                .collect(Collectors.toUnmodifiableMap(BotCommandHandler::command,
-                        Function.identity()));
     }
 
     @Override
@@ -41,6 +46,8 @@ public class RiotStatsBot extends TelegramLongPollingBot {
         return props.getToken();
     }
 
+    // </editor-fold>
+
     @Override
     public void onUpdateReceived(Update update) {
         if (!update.hasMessage() || !update.getMessage().hasText()) {
@@ -49,24 +56,41 @@ public class RiotStatsBot extends TelegramLongPollingBot {
 
         String chatId = String.valueOf(update.getMessage().getChatId());
         String text = update.getMessage().getText().trim();
-        String commandToken = text.split("\\s+", 2)[0];
+        // TODO
+//        if (!text.startsWith("/")) {
+//            return;
+//        }
+        List<String> splitedTextLine = List.of(text.split("\\s+", 2));
+//        checkArgument(!splitedTextLine.isEmpty() && splitedTextLine.size() <= 2, "Text line is not satisfying conditions!");
+
+        String commandToken = splitedTextLine.get(0);
         TelegramBotCommands command = TelegramBotCommands.getById(commandToken);
         if (command == null) {
             executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
             return;
         }
 
-        BotCommandHandler handler = handlers.get(command);
-        if (handler == null) {
-            executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
-            return;
+        switch (command) {
+            case START -> {
+                SendMessage message = startCommandHandler.handle(update);
+                sendMessage(chatId, message);
+            }
+            case PROFILE -> {
+                SendMessage message = profileCommandHandler.handle(update);
+                sendMessage(chatId, message);
+            }
+            default -> executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
         }
+    }
 
+
+    private void sendMessage(
+            String chatId,
+            SendMessage message) {
         try {
-            SendMessage response = handler.handle(update);
-            execute(response);
+            execute(message);
         } catch (Exception e) {
-            log.error("Handler error for {}", command, e);
+            log.error("Handler error for {}", e);
             executeSafely(chatId, "Упс! Произошла ошибка. Попробуйте позже.");
         }
     }
@@ -79,7 +103,7 @@ public class RiotStatsBot extends TelegramLongPollingBot {
                     .parseMode("Markdown")
                     .build());
         } catch (Exception e) {
-            // логируйте, но не падайте
+            log.error("Got error while trying to send telegram message");
         }
     }
 }

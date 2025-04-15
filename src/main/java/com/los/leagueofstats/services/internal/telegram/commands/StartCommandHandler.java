@@ -20,8 +20,7 @@ public class StartCommandHandler  implements BotCommandHandler {
                 .text("""
                         👋 *Привет!* Я бот статистики Riot Games.
                         Доступные команды:
-                        /ping — проверка связи
-                        /summoner <ник> — краткая информация о призывателе
+                        /profile <username>#<tag> — краткая информация о призывателе
                         """)
                 .parseMode("Markdown")
                 .build();

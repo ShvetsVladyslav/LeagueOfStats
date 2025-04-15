@@ -1,4 +1,4 @@
-package com.los.leagueofstats.services.integration.riot.global.exceptions;
+package com.los.leagueofstats.services.integration.riot.exceptions;
 
 import lombok.Builder;
 import lombok.Getter;

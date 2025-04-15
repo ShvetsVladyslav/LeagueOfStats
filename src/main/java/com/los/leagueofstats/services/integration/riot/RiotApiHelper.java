@@ -1,8 +1,8 @@
-package com.los.leagueofstats.services.integration.riot.global;
+package com.los.leagueofstats.services.integration.riot;
 
 import com.los.leagueofstats.config.riot.RiotApiConfProps;
-import com.los.leagueofstats.services.integration.riot.global.exceptions.RiotApiException;
-import com.los.leagueofstats.services.integration.riot.global.exceptions.RiotExceptionMessageDto;
+import com.los.leagueofstats.services.integration.riot.exceptions.RiotApiException;
+import com.los.leagueofstats.services.integration.riot.exceptions.RiotExceptionMessageDto;
 import com.los.leagueofstats.utils.JsonUtil;
 import com.los.leagueofstats.utils.Region;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +36,8 @@ public class RiotApiHelper {
     private String riotApiBaseUrl;
 
     public String getRiotApiBaseUrl(Region region) {
+        checkArgument(region != null, "Region is not specified!");
+
         return UriComponentsBuilder.fromUriString(riotApiBaseUrl)
                 .buildAndExpand(region.getId())
                 .toUriString();
@@ -64,7 +66,7 @@ public class RiotApiHelper {
     public void checkCommonResponseForError(RestClientException exception) {
         RiotExceptionMessageDto res = tryGetJsonCommonResponse(exception);
 
-        if (res == null || isEmpty(res.getErrCode())) {
+        if (res == null || res.getRespStatus() == null) {
             return;
         }
 

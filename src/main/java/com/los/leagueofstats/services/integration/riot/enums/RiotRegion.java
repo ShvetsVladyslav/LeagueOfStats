@@ -1,4 +1,4 @@
-package com.los.leagueofstats.services.integration.riot.global.enums;
+package com.los.leagueofstats.services.integration.riot.enums;
 
 import com.los.leagueofstats.utils.Region;
 

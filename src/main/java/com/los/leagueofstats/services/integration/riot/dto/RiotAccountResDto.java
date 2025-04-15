@@ -1,4 +1,4 @@
-package com.los.leagueofstats.services.integration.riot.accounts.dto;
+package com.los.leagueofstats.services.integration.riot.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
