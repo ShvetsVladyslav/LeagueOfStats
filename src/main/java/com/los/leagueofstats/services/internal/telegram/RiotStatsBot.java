@@ -56,10 +56,9 @@ public class RiotStatsBot extends TelegramLongPollingBot {
 
         String chatId = String.valueOf(update.getMessage().getChatId());
         String text = update.getMessage().getText().trim();
-        // TODO
-//        if (!text.startsWith("/")) {
-//            return;
-//        }
+        if (!text.startsWith("/")) {
+            return;
+        }
         List<String> splitedTextLine = List.of(text.split("\\s+", 2));
 //        checkArgument(!splitedTextLine.isEmpty() && splitedTextLine.size() <= 2, "Text line is not satisfying conditions!");
 
