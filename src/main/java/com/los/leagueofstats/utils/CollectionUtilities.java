@@ -157,6 +157,24 @@ public class CollectionUtilities {
     }
 
     /**
+     * Добавляет значение в MultiValueMap, если значение не null
+     *
+     * @param <K>   тип значения карты
+     * @param map   карта
+     * @param key   ключ для добавления
+     * @param value значение для добавления
+     */
+    public static <K> void putIfNotNull(
+            MultiValueMap<K, String> map,
+            K key,
+            Object value) {
+        checkArgument(map != null, "Map not specified");
+        if (value != null) {
+            map.add(key, value.toString());
+        }
+    }
+
+    /**
      * Добавляет строковое значение в карту, если значение не blank
      *
      * @param <K>   тип ключа карты

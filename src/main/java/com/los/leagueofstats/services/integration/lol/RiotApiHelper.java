@@ -1,8 +1,8 @@
-package com.los.leagueofstats.services.integration.riot;
+package com.los.leagueofstats.services.integration.lol;
 
 import com.los.leagueofstats.config.riot.RiotApiConfProps;
-import com.los.leagueofstats.services.integration.riot.exceptions.RiotApiException;
-import com.los.leagueofstats.services.integration.riot.exceptions.RiotExceptionMessageDto;
+import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiException;
+import com.los.leagueofstats.services.integration.lol.exceptions.RiotExceptionMessageDto;
 import com.los.leagueofstats.utils.JsonUtil;
 import com.los.leagueofstats.utils.Region;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +20,19 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
 
+/**
+ * Хелпер для работы с Riot API:
+ * — Формирует URL
+ * — Собирает заголовки
+ * — Обрабатывает ошибки
+ */
 @Log4j2
 @Component
 @RequiredArgsConstructor
 public class RiotApiHelper {
 
+    /** Конфигурация с Riot API токеном */
     private final RiotApiConfProps riotApiConfProps;
 
     // <editor-fold defaultstate="collapsed" desc="*** URL Utils ***">
@@ -35,6 +41,12 @@ public class RiotApiHelper {
     @Value("${service.riot.base-url}")
     private String riotApiBaseUrl;
 
+    /**
+     * Формирует финальный URL Riot API с подставленным регионом.
+     *
+     * @param region регион Riot (например, EUROPE)
+     * @return готовый URL
+     */
     public String getRiotApiBaseUrl(Region region) {
         checkArgument(region != null, "Region is not specified!");
 
@@ -49,6 +61,11 @@ public class RiotApiHelper {
 
     public static final String RIOT_TOKEN_HEADER = "X-Riot-Token";
 
+    /**
+     * Формирует стандартные заголовки для вызова Riot API.
+     *
+     * @return заголовки с токеном и контент-типом
+     */
     public HttpHeaders buildCommonRiotHeaders() {
         HttpHeaders headers = new HttpHeaders();
 
@@ -78,6 +95,12 @@ public class RiotApiHelper {
                 .build();
     }
 
+    /**
+     * Пытается достать JSON-ошибку от Riot API из исключения.
+     *
+     * @param e RestClientException
+     * @return объект с деталями ошибки или null
+     */
     @Nullable
     public RiotExceptionMessageDto tryGetJsonCommonResponse(RestClientException e){
         RestClientResponseException rcex = extractRestClientResponseException(e);
@@ -92,10 +115,10 @@ public class RiotApiHelper {
     }
 
     /**
-     * Получение статуса ответа.
+     * Пытается получить HTTP статус из исключения.
      *
-     * @param e исключение от сервиса
-     * @return статус ответа, или null если не удалось получить
+     * @param e RestClientException
+     * @return HTTP статус или null
      */
     @Nullable
     public Integer tryExtractResponseStatus(RestClientException e) {
@@ -107,13 +130,11 @@ public class RiotApiHelper {
         return rcex.getRawStatusCode();
     }
 
-
     /**
-     * Вытаскиваем RestClientResponseException из RestClientException
+     * Вытаскивает RestClientResponseException из RestClientException.
      *
      * @param e RestClientException
-     *
-     * @return RestClientResponseException или null, если нет
+     * @return RestClientResponseException или null
      */
     @Nullable
     private RestClientResponseException extractRestClientResponseException(RestClientException e) {

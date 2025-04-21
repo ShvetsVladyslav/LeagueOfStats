@@ -1,10 +1,14 @@
 package com.los.leagueofstats.services.internal.telegram;
 
 import com.los.leagueofstats.config.telegram.TelegramBotConfProps;
+import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiException;
 import com.los.leagueofstats.services.internal.telegram.commands.ProfileCommandHandler;
 import com.los.leagueofstats.services.internal.telegram.commands.StartCommandHandler;
+import com.los.leagueofstats.services.internal.telegram.commands.StatisticsCommandHandler;
 import com.los.leagueofstats.services.internal.telegram.enums.TelegramBotCommands;
+import com.los.leagueofstats.utils.TelegramMessageUtils;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -24,15 +28,18 @@ public class RiotStatsBot extends TelegramLongPollingBot {
 
     private final StartCommandHandler startCommandHandler;
     private final ProfileCommandHandler profileCommandHandler;
+    private final StatisticsCommandHandler statisticsCommandHandler;
     private final TelegramBotConfProps props;
 
     // <editor-fold defaultstate="collapsed" desc="*** Init and setters ***">
 
     public RiotStatsBot(StartCommandHandler startCommandHandler,
                         ProfileCommandHandler profileCommandHandler,
+                        StatisticsCommandHandler statisticsCommandHandler,
                         TelegramBotConfProps props) {
         this.startCommandHandler = startCommandHandler;
         this.profileCommandHandler = profileCommandHandler;
+        this.statisticsCommandHandler = statisticsCommandHandler;
         this.props = props;
     }
 
@@ -68,17 +75,39 @@ public class RiotStatsBot extends TelegramLongPollingBot {
             executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
             return;
         }
+        try {
+            switch (command) {
+                case START -> {
+                    SendMessage message = startCommandHandler.handle(update);
+                    sendMessage(chatId, message);
+                }
+                case PROFILE -> {
+                    SendMessage message = profileCommandHandler.handle(update);
+                    sendMessage(chatId, message);
+                }
+                case GLOBAL_STATS -> {
+                    executeSafely(chatId, "⏳ Собираем статистику, это может занять несколько минут...");
+                    SendMessage message = statisticsCommandHandler.handle(update);
+                    sendMessage(chatId, message);
+                }
+                default -> executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
+            }
+        } catch (RiotApiException exception) {
+            HttpStatus status = HttpStatus.valueOf(exception.getRespStatus());
 
-        switch (command) {
-            case START -> {
-                SendMessage message = startCommandHandler.handle(update);
-                sendMessage(chatId, message);
+            if (HttpStatus.TOO_MANY_REQUESTS.equals(status)) {
+                log.error("Exceeded Riot API limit: " + exception.getErrText());
+                executeSafely(chatId, TelegramMessageUtils.rateLimitExceeded());
+            } else if (status.is5xxServerError()) {
+                log.error("Got Riot API 5xx error: " + exception.getErrText());
+                executeSafely(chatId, TelegramMessageUtils.riotApiError());
+            } else {
+                log.error("UNEXPECTED RIOT ERROR: " + exception.getErrText() + " ERROR CODE: " + exception.getRespStatus());
+                executeSafely(chatId, TelegramMessageUtils.unknownError());
             }
-            case PROFILE -> {
-                SendMessage message = profileCommandHandler.handle(update);
-                sendMessage(chatId, message);
-            }
-            default -> executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
+        } catch (Exception exception) {
+            log.error("UNEXPECTED ERROR: " + exception.getMessage());
+            executeSafely(chatId, TelegramMessageUtils.unknownError());
         }
     }
 
@@ -89,7 +118,7 @@ public class RiotStatsBot extends TelegramLongPollingBot {
         try {
             execute(message);
         } catch (Exception e) {
-            log.error("Handler error for {}", e);
+            log.error("Handler error for " + e.getMessage());
             executeSafely(chatId, "Упс! Произошла ошибка. Попробуйте позже.");
         }
     }

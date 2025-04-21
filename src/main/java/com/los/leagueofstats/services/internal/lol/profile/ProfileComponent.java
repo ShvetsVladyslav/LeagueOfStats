@@ -1,15 +1,15 @@
-package com.los.leagueofstats.services.internal.profile;
+package com.los.leagueofstats.services.internal.lol.profile;
 
 import com.google.common.base.Joiner;
-import com.los.leagueofstats.services.integration.riot.RiotApiService;
-import com.los.leagueofstats.services.integration.riot.dto.LeagueEntriesResDto;
-import com.los.leagueofstats.services.integration.riot.dto.RiotAccountResDto;
-import com.los.leagueofstats.services.integration.riot.dto.SummonerDataResDto;
-import com.los.leagueofstats.services.integration.riot.enums.LeagueQueueType;
-import com.los.leagueofstats.services.integration.riot.enums.LolRegion;
-import com.los.leagueofstats.services.integration.riot.enums.RiotRegion;
-import com.los.leagueofstats.services.integration.riot.exceptions.RiotApiException;
-import com.los.leagueofstats.services.internal.profile.dto.SummonerProfileDto;
+import com.los.leagueofstats.services.integration.lol.RiotApiService;
+import com.los.leagueofstats.services.integration.lol.dto.LeagueEntriesResDto;
+import com.los.leagueofstats.services.integration.lol.dto.RiotAccountResDto;
+import com.los.leagueofstats.services.integration.lol.dto.SummonerDataResDto;
+import com.los.leagueofstats.services.integration.lol.enums.LeagueQueueType;
+import com.los.leagueofstats.services.integration.lol.enums.LolRegion;
+import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
+import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiException;
+import com.los.leagueofstats.services.internal.lol.profile.dto.SummonerProfileDto;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -19,31 +19,31 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+/**
+ * Компонент для получения профиля игрока по Riot ID.
+ */
 @Log4j2
 @Component
 public class ProfileComponent {
 
-    // <editor-fold defaultstate="collapsed" desc="*** Util elements ***">
-
-
-
-    // </editor-fold>
-
     private final RiotApiService riotApiService;
 
-    // <editor-fold defaultstate="collapsed" desc="*** Init and setters ***">
-
-    private ProfileComponent(
-            RiotApiService riotApiService) {
+    /**
+     * Создание компонента с зависимостью RiotApiService.
+     */
+    private ProfileComponent(RiotApiService riotApiService) {
         this.riotApiService = riotApiService;
     }
 
-    // </editor-fold>
-
-    public SummonerProfileDto getSummonerProfile(
-            String username,
-            String tag,
-            LolRegion region) {
+    /**
+     * Возвращает профиль призывателя по Riot ID.
+     *
+     * @param username имя игрока (например, "Министр Бота")
+     * @param tag тэг игрока (например, "baddy")
+     * @param region регион League of Legends (например, RU)
+     * @return краткий профиль с уровнем и рангами, или null, если игрок не найден
+     */
+    public SummonerProfileDto getSummonerProfile(String username, String tag, LolRegion region) {
         checkArgument(isNotBlank(username), "Username is not specified!");
         checkArgument(isNotBlank(tag), "Tag is not specified!");
         checkArgument(region != null, "Region is not specified!");
@@ -52,8 +52,7 @@ public class ProfileComponent {
         try {
             account = riotApiService.getRiotAccountByRiotId(username, tag, RiotRegion.EUROPE);
         } catch (RiotApiException exception) {
-            // TODO: exception.getRespStatus().equals(HttpStatus.NOT_FOUND.value())
-            if (exception.getErrCode().equals("404")) {
+            if (exception.getRespStatus().equals(HttpStatus.NOT_FOUND.value())) {
                 return null;
             }
             throw exception;
@@ -72,6 +71,7 @@ public class ProfileComponent {
                 .orElse(null);
 
         return SummonerProfileDto.builder()
+                .puuid(account.getPuuid())
                 .username(account.getGameName())
                 .tag(account.getTagLine())
                 .summonerLvl(String.valueOf(summonerData.getSummonerLevel()))
@@ -80,15 +80,14 @@ public class ProfileComponent {
                 .build();
     }
 
-
-    // ======= private elements =======
-
+    /**
+     * Формирует строку ранга (например, "GOLD II 87 LP").
+     * Если null — возвращает "Unranked".
+     */
     private String buildRankStr(LeagueEntriesResDto rankedInfo) {
         if (rankedInfo == null) {
             return "Unranked";
         }
-
         return Joiner.on(" ").join(rankedInfo.getTier(), rankedInfo.getRank(), rankedInfo.getLeaguePoints(), "LP");
     }
-
 }

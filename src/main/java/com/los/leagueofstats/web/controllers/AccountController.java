@@ -1,8 +1,8 @@
 package com.los.leagueofstats.web.controllers;
 
-import com.los.leagueofstats.services.integration.riot.RiotApiService;
-import com.los.leagueofstats.services.integration.riot.dto.RiotAccountResDto;
-import com.los.leagueofstats.services.integration.riot.enums.RiotRegion;
+import com.los.leagueofstats.services.integration.lol.RiotApiService;
+import com.los.leagueofstats.services.integration.lol.dto.RiotAccountResDto;
+import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.web.dto.CommonWrapperResDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;

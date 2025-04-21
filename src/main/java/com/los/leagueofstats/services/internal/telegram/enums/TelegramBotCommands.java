@@ -7,9 +7,17 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+/**
+ * Список поддерживаемых Telegram-команд для бота.
+ */
 public enum TelegramBotCommands {
+
+    /** Команда запуска бота (/start) */
     START("/start"),
-    PROFILE("/profile");
+    /** Получение профиля игрока (/profile <ник#тег>) */
+    PROFILE("/profile"),
+    /** Получение глобальной статистики (/stats <ник#тег>) */
+    GLOBAL_STATS("/stats");
 
     private final String command;
 
@@ -17,25 +25,20 @@ public enum TelegramBotCommands {
         this.command = command;
     }
 
-    /**
-     * Get id.
-     *
-     * @return id
-     */
+    /** Возвращает текст команды (например, /start) */
     public String getCommand() {
         return this.command;
     }
 
-    /** to get enum value by id */
+    /** Индекс команд по их строковому значению */
     private static final Map<String, TelegramBotCommands> ID_INDEX = Stream.of(TelegramBotCommands.values())
             .collect(ImmutableMap.toImmutableMap(TelegramBotCommands::getCommand, Function.identity()));
 
     /**
-     * Get enum value by id
+     * Возвращает enum-команду по строковому значению.
      *
-     * @param id id
-     * @return enum value,
-     *         or null if id is unknown
+     * @param id строка команды (например, "/profile")
+     * @return соответствующая команда или null, если не найдена
      */
     @Nullable
     public static TelegramBotCommands getById(@Nullable String id) {
