@@ -53,8 +53,8 @@ public class MatchFetchService {
         List<String> result = new ArrayList<>();
 
         int start = 0;
-        int count = 100;
-        int max = 500;
+        int count = 10;
+        int max = 20;
 
         while (result.size() < max) {
             int currentBatch = Math.min(count, max - result.size());
@@ -66,7 +66,7 @@ public class MatchFetchService {
                     .build();
 
             List<String> batch = riotApiService.getMatchIdsByPuuid(currentParams, RiotRegion.EUROPE);
-            log.debug("BATCH RESULT: " + batch.toString());
+            log.info("BATCH RESULT: " + batch.toString());
 
             if (batch.isEmpty()) break;
 

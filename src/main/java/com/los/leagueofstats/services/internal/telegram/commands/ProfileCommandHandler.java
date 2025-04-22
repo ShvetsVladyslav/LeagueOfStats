@@ -50,6 +50,7 @@ public class ProfileCommandHandler implements BotCommandHandler {
         String userInput = text.replace(command().getCommand(), "").trim();
 
         if (isBlank(userInput)) {
+            log.warn("USER INPUT IS EMPTY!");
             return SendMessage.builder()
                     .chatId(String.valueOf(chatId))
                     .text(TelegramMessageUtils.commandRequiresArguments(command().getCommand()))
@@ -59,7 +60,7 @@ public class ProfileCommandHandler implements BotCommandHandler {
 
         Matcher riotMatcher = RIOT_ID_PATTERN.matcher(userInput);
         if (!riotMatcher.matches()) {
-            log.warn("USER INPUT: " + userInput);
+            log.warn("USER IS NOT MATCH RIOT ID FORMAT: " + userInput);
             return SendMessage.builder()
                     .chatId(String.valueOf(chatId))
                     .text(TelegramMessageUtils.invalidRiotIdFormat(userInput))
@@ -73,6 +74,7 @@ public class ProfileCommandHandler implements BotCommandHandler {
         String message;
         SummonerProfileDto profile = profileComponent.getSummonerProfile(username, tag, LolRegion.RU);
         if (profile != null) {
+            log.info("PROFILE: " + profile);
             message = String.format(
                     """
                     🏅 *%s#%s*
@@ -88,6 +90,7 @@ public class ProfileCommandHandler implements BotCommandHandler {
                     profile.getCurrentFlexRank()
             );
         } else {
+            log.warn("SUMMONER " + userInput + " NOT FOUND");
             message = TelegramMessageUtils.summonerNotFound(userInput);
         }
 

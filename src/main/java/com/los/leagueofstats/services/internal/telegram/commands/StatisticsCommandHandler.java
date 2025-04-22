@@ -84,6 +84,7 @@ public class StatisticsCommandHandler implements BotCommandHandler {
         if (profile != null) {
             MatchStatsDto stats = statsComponent.collectStats(profile.getPuuid());
             if (stats != null) {
+                log.info("COLLECTED STATS: " + stats);
                 message = buildStatsMessage(stats);
             } else {
                 message = TelegramMessageUtils.noMatchData();
