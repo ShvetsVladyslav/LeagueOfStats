@@ -6,10 +6,14 @@ import com.los.leagueofstats.services.integration.lol.dto.GetMatchIdsParamsDto;
 import com.los.leagueofstats.services.integration.lol.dto.RiotMatchResDto;
 import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Сервис для получения матчей с ограничением по скорости.
@@ -39,16 +43,44 @@ public class MatchFetchService {
     private final RateLimiter rateLimiter = RateLimiter.create(19.0);
 
     /**
+     * Получает матч от Riot. Cacheable
+     */
+    @Cacheable(value = "match", key = "#matchId + ':' + #region")
+    public RiotMatchResDto getMatchByIdCacheable(
+            String matchId,
+            RiotRegion region) {
+        checkArgument(isNotBlank(matchId), "Match ID is not specified!");
+        checkArgument(region != null, "Region is not specified!");
+
+        return getMatchById(matchId, region);
+    }
+
+    /**
      * Получает матч от Riot с учётом лимита.
      */
-    public RiotMatchResDto getMatchById(String matchId) {
-        return riotApiService.getMatchById(matchId, RiotRegion.EUROPE);
+    public RiotMatchResDto getMatchById(String matchId, RiotRegion region) {
+        return riotApiService.getMatchById(matchId, region);
+    }
+
+    /**
+     * Получает все матчId игрока с учётом лимитов и параметров. Cacheable
+     */
+    @Cacheable(value = "matchIds", key = "#puuid + ':' + #region")
+    public List<String> getMaxCountMatchIdsCacheable(
+            String puuid,
+            RiotRegion region) {
+        checkArgument(isNotBlank(puuid), "PUUID is not specified!");
+        checkArgument(region != null, "Region is not specified!");
+
+        return getMaxCountMatchIds(puuid, region);
     }
 
     /**
      * Получает все матчId игрока с учётом лимитов и параметров.
      */
-    public List<String> getLastMatchIds(String puuid) {
+    public List<String> getMaxCountMatchIds(
+            String puuid,
+            RiotRegion region) {
         rateLimiter.acquire(); // подождёт, если лимит превышен
         List<String> result = new ArrayList<>();
 
@@ -65,7 +97,7 @@ public class MatchFetchService {
                     .count(currentBatch)
                     .build();
 
-            List<String> batch = riotApiService.getMatchIdsByPuuid(currentParams, RiotRegion.EUROPE);
+            List<String> batch = riotApiService.getMatchIdsByPuuid(currentParams, region);
             log.info("BATCH RESULT: " + batch.toString());
 
             if (batch.isEmpty()) break;

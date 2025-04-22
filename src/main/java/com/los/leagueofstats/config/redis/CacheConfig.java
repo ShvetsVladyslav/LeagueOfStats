@@ -17,9 +17,9 @@ public class CacheConfig {
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         Map<String, RedisCacheConfiguration> configs = new HashMap<>();
 
-        configs.put("summoner", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(15)));
-        configs.put("matchIds", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(5)));
-        configs.put("match", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)));
+        configs.put("profile", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(5)));
+        configs.put("matchIds", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(25)));
+        configs.put("match", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(3)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .withInitialCacheConfigurations(configs)

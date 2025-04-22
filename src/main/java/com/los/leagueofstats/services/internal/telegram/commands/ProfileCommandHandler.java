@@ -72,7 +72,7 @@ public class ProfileCommandHandler implements BotCommandHandler {
         String tag = riotMatcher.group("tag");
 
         String message;
-        SummonerProfileDto profile = profileComponent.getSummonerProfile(username, tag, LolRegion.RU);
+        SummonerProfileDto profile = profileComponent.getSummonerProfileCacheable(username, tag, LolRegion.RU);
         if (profile != null) {
             log.info("PROFILE: " + profile);
             message = String.format(

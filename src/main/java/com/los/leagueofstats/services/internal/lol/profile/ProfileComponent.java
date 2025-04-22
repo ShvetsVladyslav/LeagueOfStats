@@ -11,6 +11,7 @@ import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiException;
 import com.los.leagueofstats.services.internal.lol.profile.dto.SummonerProfileDto;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,15 @@ public class ProfileComponent {
         this.riotApiService = riotApiService;
     }
 
+    @Cacheable(value = "profile", key = "#username + '#' + #tag + ':' + #region")
+    public SummonerProfileDto getSummonerProfileCacheable(String username, String tag, LolRegion region) {
+        checkArgument(isNotBlank(username), "Username is not specified!");
+        checkArgument(isNotBlank(tag), "Tag is not specified!");
+        checkArgument(region != null, "Region is not specified!");
+
+        return getSummonerProfile(username, tag, region);
+    }
+
     /**
      * Возвращает профиль призывателя по Riot ID.
      *
@@ -50,6 +60,7 @@ public class ProfileComponent {
 
         RiotAccountResDto account;
         try {
+            log.info("GET PROFILE FROM API");
             account = riotApiService.getRiotAccountByRiotId(username, tag, RiotRegion.EUROPE);
         } catch (RiotApiException exception) {
             if (exception.getRespStatus().equals(HttpStatus.NOT_FOUND.value())) {

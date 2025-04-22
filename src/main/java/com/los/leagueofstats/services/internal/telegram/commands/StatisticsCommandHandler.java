@@ -80,7 +80,7 @@ public class StatisticsCommandHandler implements BotCommandHandler {
         String tag = riotMatcher.group("tag");
 
         String message;
-        SummonerProfileDto profile = profileComponent.getSummonerProfile(username, tag, LolRegion.RU);
+        SummonerProfileDto profile = profileComponent.getSummonerProfileCacheable(username, tag, LolRegion.RU);
         if (profile != null) {
             MatchStatsDto stats = statsComponent.collectStats(profile.getPuuid());
             if (stats != null) {

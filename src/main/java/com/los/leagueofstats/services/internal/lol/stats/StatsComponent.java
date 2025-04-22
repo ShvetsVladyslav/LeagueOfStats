@@ -3,6 +3,7 @@ package com.los.leagueofstats.services.internal.lol.stats;
 import com.los.leagueofstats.services.integration.lol.dto.MatchInfoResDto;
 import com.los.leagueofstats.services.integration.lol.dto.MatchParticipantDto;
 import com.los.leagueofstats.services.integration.lol.dto.RiotMatchResDto;
+import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.services.internal.lol.stats.dto.MatchStatsDto;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
@@ -36,7 +37,7 @@ public class StatsComponent {
      * @return сводка статистики по общим, соло и флекс играм
      */
     public MatchStatsDto collectStats(String puuid) {
-        List<String> matchIds = matchFetchService.getLastMatchIds(puuid);
+        List<String> matchIds = matchFetchService.getMaxCountMatchIdsCacheable(puuid, RiotRegion.EUROPE);
 
         List<RiotMatchResDto> matches = fetchMatchesSequentiallyWithDelay(matchIds);
 
@@ -121,7 +122,7 @@ public class StatsComponent {
 
         for (String matchId : matchIds) {
             try {
-                RiotMatchResDto match = matchFetchService.getMatchById(matchId); // без rateLimiter
+                RiotMatchResDto match = matchFetchService.getMatchByIdCacheable(matchId, RiotRegion.EUROPE); // без rateLimiter
                 result.add(match);
             } catch (Exception ex) {
                 log.warn("Failed to fetch matchId: {}", matchId, ex);
