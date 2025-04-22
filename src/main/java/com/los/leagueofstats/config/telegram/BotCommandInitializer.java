@@ -23,7 +23,7 @@ public class BotCommandInitializer {
             List<BotCommand> commands = List.of(
                     new BotCommand("/start", "Начало работы"),
                     new BotCommand("/profile", "Профиль игрока <ник#тег>"),
-                    new BotCommand("/stats", "Статистика последних 500 матчей <ник#тег>")
+                    new BotCommand("/stats", "Статистика максимальное кол-во матчей <ник#тег>")
             );
 
             myTelegramBot.execute(new SetMyCommands(commands, new BotCommandScopeDefault(), null));

@@ -35,7 +35,7 @@ public class StartCommandHandler implements BotCommandHandler {
                         👋 *Привет!* Я бот статистики Riot Games.
                         Доступные команды:
                         /profile <ник#тег> — Показать профиль игрока
-                        /stats <ник#тег> — Общая статистика за последние 500 матчей
+                        /stats <ник#тег> — Общая статистика за максимально возможное кол-во матчей
                         """)
                 .parseMode("Markdown")
                 .build();
