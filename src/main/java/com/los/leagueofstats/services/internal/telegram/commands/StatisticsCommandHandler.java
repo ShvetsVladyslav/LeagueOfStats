@@ -108,7 +108,7 @@ public class StatisticsCommandHandler implements BotCommandHandler {
      */
     private String buildStatsMessage(MatchStatsDto stats) {
         return String.format("""
-                            📊 Глобальная статистика за последние 500 матчей:
+                            📊 Глобальная статистика за максимально возможное количество матчей:
                             Матчей: %d
                             Победы: %d
                             Поражения: %d

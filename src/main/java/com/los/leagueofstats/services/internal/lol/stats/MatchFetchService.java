@@ -53,8 +53,8 @@ public class MatchFetchService {
         List<String> result = new ArrayList<>();
 
         int start = 0;
-        int count = 10;
-        int max = 20;
+        int count = 100;
+        int max = 2000;
 
         while (result.size() < max) {
             int currentBatch = Math.min(count, max - result.size());
