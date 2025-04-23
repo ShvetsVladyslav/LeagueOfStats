@@ -26,7 +26,7 @@ public class StatsComponent {
      *
      * @param matchFetchService сервис матчей
      */
-    private StatsComponent(MatchFetchService matchFetchService) {
+    public StatsComponent(MatchFetchService matchFetchService) {
         this.matchFetchService = matchFetchService;
     }
 
@@ -101,6 +101,8 @@ public class StatsComponent {
         dto.setFlexLosses(fLose);
         dto.setFlexWinRate(calcWinRate(fWin, flexGames));
 
+        log.info("Итоговая статистки по матчам {}", dto);
+
         return dto;
     }
 
@@ -126,14 +128,6 @@ public class StatsComponent {
                 result.add(match);
             } catch (Exception ex) {
                 log.warn("Failed to fetch matchId: {}", matchId, ex);
-            }
-
-            // ⏱️ задержка 1200мс — это 50 RPS максимум и ~100 за 2 минуты
-            try {
-                Thread.sleep(1200);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
             }
         }
 

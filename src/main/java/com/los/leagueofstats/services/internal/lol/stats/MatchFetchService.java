@@ -32,7 +32,7 @@ public class MatchFetchService {
 
     // <editor-fold defaultstate="collapsed" desc="*** Init and setters ***">
 
-    private MatchFetchService(
+    public MatchFetchService(
             RiotApiService riotApiService) {
         this.riotApiService = riotApiService;
     }
@@ -59,6 +59,18 @@ public class MatchFetchService {
      * Получает матч от Riot с учётом лимита.
      */
     public RiotMatchResDto getMatchById(String matchId, RiotRegion region) {
+        checkArgument(isNotBlank(matchId), "Match ID is not specified!");
+        checkArgument(region != null, "Region is not specified!");
+
+        log.debug("GET MATCH FROM API " + matchId);
+
+        // ⏱️ задержка 1200мс — это 50 RPS максимум и ~100 за 2 минуты
+        try {
+            Thread.sleep(1200);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         return riotApiService.getMatchById(matchId, region);
     }
 
@@ -98,7 +110,7 @@ public class MatchFetchService {
                     .build();
 
             List<String> batch = riotApiService.getMatchIdsByPuuid(currentParams, region);
-            log.info("BATCH RESULT: " + batch.toString());
+            log.debug("BATCH RESULT: " + batch.toString());
 
             if (batch.isEmpty()) break;
 

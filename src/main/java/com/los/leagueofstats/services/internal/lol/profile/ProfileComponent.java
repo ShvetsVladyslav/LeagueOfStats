@@ -11,6 +11,8 @@ import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiException;
 import com.los.leagueofstats.services.internal.lol.profile.dto.SummonerProfileDto;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -32,17 +34,39 @@ public class ProfileComponent {
     /**
      * Создание компонента с зависимостью RiotApiService.
      */
-    private ProfileComponent(RiotApiService riotApiService) {
+    public ProfileComponent(RiotApiService riotApiService) {
         this.riotApiService = riotApiService;
     }
 
+    /**
+     * Возвращает профиль призывателя по Riot ID. Cacheable
+     *
+     * @param username имя игрока (например, "Министр Бота")
+     * @param tag тэг игрока (например, "baddy")
+     * @param region регион League of Legends (например, RU)
+     * @return краткий профиль с уровнем и рангами, или null, если игрок не найден
+     */
     @Cacheable(value = "profile", key = "#username + '#' + #tag + ':' + #region")
     public SummonerProfileDto getSummonerProfileCacheable(String username, String tag, LolRegion region) {
         checkArgument(isNotBlank(username), "Username is not specified!");
         checkArgument(isNotBlank(tag), "Tag is not specified!");
         checkArgument(region != null, "Region is not specified!");
 
-        return getSummonerProfile(username, tag, region);
+        SummonerProfileDto profile = getSummonerProfile(username, tag, region);
+        cacheByPuuid(profile);
+
+        return profile;
+    }
+
+    /**
+     * Добавляет двух-сторонний кеш на профиль
+     *
+     * @param profile профиль
+     * @return добавляет кеш
+     */
+    @CachePut(value = "profile", key = "#profile.puuid")
+    public SummonerProfileDto cacheByPuuid(SummonerProfileDto profile) {
+        return profile;
     }
 
     /**
@@ -60,12 +84,16 @@ public class ProfileComponent {
 
         RiotAccountResDto account;
         try {
-            log.info("GET PROFILE FROM API");
+            log.info("Запрос профиля через Riot API: username='{}', tag='{}', регион='{}'",
+                    username, tag, RiotRegion.EUROPE);
             account = riotApiService.getRiotAccountByRiotId(username, tag, RiotRegion.EUROPE);
         } catch (RiotApiException exception) {
             if (exception.getRespStatus().equals(HttpStatus.NOT_FOUND.value())) {
+                log.warn("Профиль не найден в Riot API: username='{}', tag='{}'", username, tag);
                 return null;
             }
+            log.error("Ошибка при получении профиля: status={}, message={}",
+                    exception.getRespStatus(), exception.getMessage(), exception);
             throw exception;
         }
 

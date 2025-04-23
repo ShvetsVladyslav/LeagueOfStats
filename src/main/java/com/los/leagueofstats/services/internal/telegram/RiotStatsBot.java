@@ -63,6 +63,7 @@ public class RiotStatsBot extends TelegramLongPollingBot {
 
         String chatId = String.valueOf(update.getMessage().getChatId());
         String text = update.getMessage().getText().trim();
+        log.info("Получен userInput от пользователя: '{}'", text);
         if (!text.startsWith("/")) {
             return;
         }
@@ -78,19 +79,26 @@ public class RiotStatsBot extends TelegramLongPollingBot {
         try {
             switch (command) {
                 case START -> {
+                    log.info("Обработка команды /start от chatId: {}", chatId);
                     SendMessage message = startCommandHandler.handle(update);
                     sendMessage(chatId, message);
                 }
                 case PROFILE -> {
+                    log.info("Обработка команды /profile от chatId: {}", chatId);
                     SendMessage message = profileCommandHandler.handle(update);
                     sendMessage(chatId, message);
                 }
                 case GLOBAL_STATS -> {
+                    log.info("Обработка команды /stats от chatId: {} — начало сбора статистики", chatId);
                     executeSafely(chatId, "⏳ Собираем статистику, это может занять несколько минут...");
                     SendMessage message = statisticsCommandHandler.handle(update);
+                    log.info("Сбор статистики завершён для chatId: {}", chatId);
                     sendMessage(chatId, message);
                 }
-                default -> executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
+                default -> {
+                    log.warn("Получена неизвестная команда от chatId: {}. Отправка подсказки.", chatId);
+                    executeSafely(chatId, "Неизвестная команда. Напишите /start для справки.");
+                }
             }
         } catch (RiotApiException exception) {
             HttpStatus status = HttpStatus.valueOf(exception.getRespStatus());

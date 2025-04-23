@@ -1,6 +1,7 @@
 package com.los.leagueofstats.services.internal.telegram.commands;
 
 import com.los.leagueofstats.services.integration.lol.enums.LolRegion;
+import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.services.internal.lol.profile.ProfileComponent;
 import com.los.leagueofstats.services.internal.lol.profile.dto.SummonerProfileDto;
 import com.los.leagueofstats.services.internal.lol.stats.StatsComponent;
