@@ -13,13 +13,19 @@ import java.util.Map;
 @Configuration
 public class CacheConfig {
 
+    public static final String PROFILE_CACHE_NAME = "profile";
+    public static final String SEASON_MATCHES_CACHE_NAME = "seasonMatchIds";
+    public static final String GLOBAL_MATCHES_CACHE_NAME = "globalMatchIds";
+    public static final String MATCH_CACHE_NAME = "match";
+
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         Map<String, RedisCacheConfiguration> configs = new HashMap<>();
 
-        configs.put("profile", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(5)));
-        configs.put("matchIds", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(25)));
-        configs.put("match", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(3)));
+        configs.put(PROFILE_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)));
+        configs.put(SEASON_MATCHES_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(25)));
+        configs.put(GLOBAL_MATCHES_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(5)));
+        configs.put(MATCH_CACHE_NAME, RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(3)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .withInitialCacheConfigurations(configs)

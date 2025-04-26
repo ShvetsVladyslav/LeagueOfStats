@@ -1,11 +1,10 @@
 package com.los.leagueofstats.services.internal.telegram.commands;
 
 import com.los.leagueofstats.services.integration.lol.enums.LolRegion;
-import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.services.internal.lol.profile.ProfileComponent;
 import com.los.leagueofstats.services.internal.lol.profile.dto.SummonerProfileDto;
 import com.los.leagueofstats.services.internal.lol.stats.StatsComponent;
-import com.los.leagueofstats.services.internal.lol.stats.dto.MatchStatsDto;
+import com.los.leagueofstats.services.internal.lol.stats.dto.SummonerMatchStatsDto;
 import com.los.leagueofstats.services.internal.telegram.enums.TelegramBotCommands;
 import com.los.leagueofstats.utils.TelegramMessageUtils;
 import lombok.extern.log4j.Log4j2;
@@ -19,20 +18,20 @@ import static com.los.leagueofstats.utils.RiotUtils.RIOT_ID_PATTERN;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
- * Обработка команды /stats.
+ * Обработка команды /globalstats.
  * Показывает глобальную статистику игрока: общее число матчей, побед, поражений и винрейт.
  * Делится по режимам: все игры, SoloQ и Flex.
  */
 @Log4j2
 @Component
-public class StatisticsCommandHandler implements BotCommandHandler {
+public class GlobalStatisticsCommandHandler implements BotCommandHandler {
 
     /** Компонент для получения профиля игрока */
     private final ProfileComponent profileComponent;
     /** Компонент для сбора матчевой статистики */
     private final StatsComponent statsComponent;
 
-    public StatisticsCommandHandler(
+    public GlobalStatisticsCommandHandler(
             ProfileComponent profileComponent,
             StatsComponent statsComponent) {
         this.profileComponent = profileComponent;
@@ -83,10 +82,10 @@ public class StatisticsCommandHandler implements BotCommandHandler {
         String message;
         SummonerProfileDto profile = profileComponent.getSummonerProfileCacheable(username, tag, LolRegion.RU);
         if (profile != null) {
-            MatchStatsDto stats = statsComponent.collectStats(profile.getPuuid());
+            SummonerMatchStatsDto stats = statsComponent.collectGlobalStats(profile.getPuuid());
             if (stats != null) {
                 log.info("COLLECTED STATS: " + stats);
-                message = buildStatsMessage(stats);
+                message = buildStatsMessage(username, tag, stats);
             } else {
                 message = TelegramMessageUtils.noMatchData();
             }
@@ -107,9 +106,9 @@ public class StatisticsCommandHandler implements BotCommandHandler {
      * @param stats объект с результатами
      * @return отформатированное сообщение
      */
-    private String buildStatsMessage(MatchStatsDto stats) {
+    private String buildStatsMessage(String username, String tag, SummonerMatchStatsDto stats) {
         return String.format("""
-                            📊 Глобальная статистика за максимально возможное количество матчей:
+                            📊 *%s#%s — Общая статистика за максимальное кол-во матчей:*
                             Матчей: %d
                             Победы: %d
                             Поражения: %d
@@ -127,20 +126,22 @@ public class StatisticsCommandHandler implements BotCommandHandler {
                             Поражения: %d
                             Винрейт: %.1f%%
                             """,
-                stats.getTotalMatches(),
-                stats.getTotalWins(),
-                stats.getTotalLosses(),
-                stats.getTotalWinRate(),
+                username, tag,
 
-                stats.getSoloMatches(),
-                stats.getSoloWins(),
-                stats.getSoloLosses(),
-                stats.getSoloWinRate(),
+                stats.getTotal().getTotalGames(),
+                stats.getTotal().getWins(),
+                stats.getTotal().getLosses(),
+                stats.getTotal().getWinRate(),
 
-                stats.getFlexMatches(),
-                stats.getFlexWins(),
-                stats.getFlexLosses(),
-                stats.getFlexWinRate()
+                stats.getTotal().getTotalGames(),
+                stats.getTotal().getWins(),
+                stats.getTotal().getLosses(),
+                stats.getTotal().getWinRate(),
+
+                stats.getTotal().getTotalGames(),
+                stats.getTotal().getWins(),
+                stats.getTotal().getLosses(),
+                stats.getTotal().getWinRate()
         );
     }
 }

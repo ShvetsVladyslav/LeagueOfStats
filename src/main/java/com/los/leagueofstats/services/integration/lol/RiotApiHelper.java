@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -147,6 +148,21 @@ public class RiotApiHelper {
         }
 
         return (RestClientResponseException) cause;
+    }
+
+    public void handleDefaultRiotException(RiotApiException exception) throws RiotApiException {
+        HttpStatus status = HttpStatus.valueOf(exception.getRespStatus());
+
+        if (HttpStatus.TOO_MANY_REQUESTS.equals(status)) {
+            log.error("Exceeded Riot API limit: " + exception.getErrText());
+            throw exception;
+        } else if (status.is5xxServerError()) {
+            log.error("Got Riot API 5xx error: " + exception.getErrText());
+            throw exception;
+        } else {
+            log.error("UNEXPECTED RIOT ERROR: " + exception.getErrText() + " ERROR CODE: " + exception.getRespStatus());
+            throw exception;
+        }
     }
 
     // </editor-fold>

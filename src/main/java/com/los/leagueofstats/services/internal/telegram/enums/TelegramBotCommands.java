@@ -16,8 +16,10 @@ public enum TelegramBotCommands {
     START("/start"),
     /** Получение профиля игрока (/profile <ник#тег>) */
     PROFILE("/profile"),
-    /** Получение глобальной статистики (/stats <ник#тег>) */
-    GLOBAL_STATS("/stats");
+    /** Получение глобальной статистики (/globalstats <ник#тег>) */
+    GLOBAL_STATS("/globalstats"),
+    /** Показать общую статистику за всё время (/stats <ник#тег>) */
+    STATS("/stats");
 
     private final String command;
 

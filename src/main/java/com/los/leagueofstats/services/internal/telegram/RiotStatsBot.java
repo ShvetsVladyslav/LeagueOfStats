@@ -4,7 +4,8 @@ import com.los.leagueofstats.config.telegram.TelegramBotConfProps;
 import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiException;
 import com.los.leagueofstats.services.internal.telegram.commands.ProfileCommandHandler;
 import com.los.leagueofstats.services.internal.telegram.commands.StartCommandHandler;
-import com.los.leagueofstats.services.internal.telegram.commands.StatisticsCommandHandler;
+import com.los.leagueofstats.services.internal.telegram.commands.GlobalStatisticsCommandHandler;
+import com.los.leagueofstats.services.internal.telegram.commands.StatisticCommandHandler;
 import com.los.leagueofstats.services.internal.telegram.enums.TelegramBotCommands;
 import com.los.leagueofstats.utils.TelegramMessageUtils;
 import lombok.extern.log4j.Log4j2;
@@ -28,18 +29,21 @@ public class RiotStatsBot extends TelegramLongPollingBot {
 
     private final StartCommandHandler startCommandHandler;
     private final ProfileCommandHandler profileCommandHandler;
-    private final StatisticsCommandHandler statisticsCommandHandler;
+    private final GlobalStatisticsCommandHandler globalStatisticsCommandHandler;
+    private final StatisticCommandHandler statisticCommandHandler;
     private final TelegramBotConfProps props;
 
     // <editor-fold defaultstate="collapsed" desc="*** Init and setters ***">
 
     public RiotStatsBot(StartCommandHandler startCommandHandler,
                         ProfileCommandHandler profileCommandHandler,
-                        StatisticsCommandHandler statisticsCommandHandler,
+                        GlobalStatisticsCommandHandler globalStatisticsCommandHandler,
+                        StatisticCommandHandler statisticCommandHandler,
                         TelegramBotConfProps props) {
         this.startCommandHandler = startCommandHandler;
         this.profileCommandHandler = profileCommandHandler;
-        this.statisticsCommandHandler = statisticsCommandHandler;
+        this.globalStatisticsCommandHandler = globalStatisticsCommandHandler;
+        this.statisticCommandHandler = statisticCommandHandler;
         this.props = props;
     }
 
@@ -89,9 +93,16 @@ public class RiotStatsBot extends TelegramLongPollingBot {
                     sendMessage(chatId, message);
                 }
                 case GLOBAL_STATS -> {
+                    log.info("Обработка команды /globalstats от chatId: {} — начало сбора статистики", chatId);
+                    executeSafely(chatId, "⏳ Собираем статистику, это может занять несколько минут...");
+                    SendMessage message = globalStatisticsCommandHandler.handle(update);
+                    log.info("Сбор статистики завершён для chatId: {}", chatId);
+                    sendMessage(chatId, message);
+                }
+                case STATS -> {
                     log.info("Обработка команды /stats от chatId: {} — начало сбора статистики", chatId);
                     executeSafely(chatId, "⏳ Собираем статистику, это может занять несколько минут...");
-                    SendMessage message = statisticsCommandHandler.handle(update);
+                    SendMessage message = statisticCommandHandler.handle(update);
                     log.info("Сбор статистики завершён для chatId: {}", chatId);
                     sendMessage(chatId, message);
                 }

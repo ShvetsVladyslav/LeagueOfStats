@@ -3,8 +3,10 @@ package com.los.leagueofstats.services.internal.lol.stats;
 import com.los.leagueofstats.services.integration.lol.dto.MatchInfoResDto;
 import com.los.leagueofstats.services.integration.lol.dto.MatchParticipantDto;
 import com.los.leagueofstats.services.integration.lol.dto.RiotMatchResDto;
+import com.los.leagueofstats.services.integration.lol.enums.LeagueQueueType;
 import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
-import com.los.leagueofstats.services.internal.lol.stats.dto.MatchStatsDto;
+import com.los.leagueofstats.services.internal.lol.stats.dto.ModeStatsDto;
+import com.los.leagueofstats.services.internal.lol.stats.dto.SummonerMatchStatsDto;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
@@ -36,21 +38,68 @@ public class StatsComponent {
      * @param puuid PUUID игрока
      * @return сводка статистики по общим, соло и флекс играм
      */
-    public MatchStatsDto collectStats(String puuid) {
+    public SummonerMatchStatsDto collectGlobalStats(String puuid) {
         List<String> matchIds = matchFetchService.getMaxCountMatchIdsCacheable(puuid, RiotRegion.EUROPE);
 
-        List<RiotMatchResDto> matches = fetchMatchesSequentiallyWithDelay(matchIds);
+        List<RiotMatchResDto> matches = fetchMatches(matchIds);
 
-        int totalWins = 0;
-        int totalLosses = 0;
-        int soloWins = 0;
-        int soloLosses = 0;
-        int flexWins = 0;
-        int flexLosses = 0;
+        ModeStatsDto totalStats = aggregateStats(puuid, matches);
+        ModeStatsDto soloStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.SOLOQ));
+        ModeStatsDto flexStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.FLEX));
 
-        for (RiotMatchResDto response : matches) {
-            MatchInfoResDto info = response.getInfo();
-            Integer queueId = info.getQueueId();
+        return SummonerMatchStatsDto.builder()
+                .total(totalStats)
+                .rankedSolo(soloStats)
+                .rankedFlex(flexStats)
+                .build();
+    }
+
+    /**
+     * Получить сезонную статистику игрока.
+     */
+    public SummonerMatchStatsDto collectSeasonalStats(
+            String puuid) {
+        List<String> matchIds = matchFetchService.getCurrentSeasonMatchIdsCacheable(puuid, RiotRegion.EUROPE);
+
+        //TODO fix statistic bug: Не фильтрует за текущий сезон
+        List<RiotMatchResDto> matches = fetchMatches(matchIds).stream()
+                .filter(match -> match.getInfo().getGameStartTimestamp() / 1000
+                        >= matchFetchService.getStartOfCurrentSeasonTimestamp())
+                .toList();
+
+        additionalLogs(matches);
+
+        ModeStatsDto totalStats = aggregateStats(puuid, matches);
+        ModeStatsDto soloStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.SOLOQ));
+        ModeStatsDto flexStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.FLEX));
+
+        return SummonerMatchStatsDto.builder()
+                .total(totalStats)
+                .rankedSolo(soloStats)
+                .rankedFlex(flexStats)
+                .build();
+    }
+
+    /**
+     * Отфильтровать матчи по нужному режиму игры.
+     */
+    private List<RiotMatchResDto> filterMatchesByQueue(List<RiotMatchResDto> matches, LeagueQueueType queueType) {
+        return matches.stream()
+                .filter(match -> match.getInfo().getQueueId().equals(queueType.getRiotId()))
+                .toList();
+    }
+
+    /**
+     * Агрегировать статистику по матчам.
+     */
+    private ModeStatsDto aggregateStats(
+            String puuid,
+            List<RiotMatchResDto> matches) {
+        int wins = 0;
+        int losses = 0;
+
+        for (RiotMatchResDto match : matches) {
+            MatchInfoResDto info = match.getInfo();
 
             MatchParticipantDto player = info.getParticipants().stream()
                     .filter(p -> p.getPuuid().equals(puuid))
@@ -61,49 +110,19 @@ public class StatsComponent {
 
             boolean win = Boolean.TRUE.equals(player.getWin());
 
-            if (win) totalWins++;
-            else totalLosses++;
-
-            if (queueId != null && queueId == 420) {
-                if (win) soloWins++;
-                else soloLosses++;
-            } else if (queueId != null && queueId == 440) {
-                if (win) flexWins++;
-                else flexLosses++;
-            }
+            if (win) wins++;
+            else losses++;
         }
 
-        return buildStats(totalWins, totalLosses, soloWins, soloLosses, flexWins, flexLosses);
-    }
+        int total = wins + losses;
+        double winRate = calcWinRate(wins, total);
 
-    /**
-     * Строит итоговую статистику на основе побед/поражений.
-     */
-    private MatchStatsDto buildStats(int tWin, int tLose, int sWin, int sLose, int fWin, int fLose) {
-        MatchStatsDto dto = new MatchStatsDto();
-
-        int totalGames = tWin + tLose;
-        int soloGames = sWin + sLose;
-        int flexGames = fWin + fLose;
-
-        dto.setTotalMatches(totalGames);
-        dto.setTotalWins(tWin);
-        dto.setTotalLosses(tLose);
-        dto.setTotalWinRate(calcWinRate(tWin, totalGames));
-
-        dto.setSoloMatches(soloGames);
-        dto.setSoloWins(sWin);
-        dto.setSoloLosses(sLose);
-        dto.setSoloWinRate(calcWinRate(sWin, soloGames));
-
-        dto.setFlexMatches(flexGames);
-        dto.setFlexWins(fWin);
-        dto.setFlexLosses(fLose);
-        dto.setFlexWinRate(calcWinRate(fWin, flexGames));
-
-        log.info("Итоговая статистки по матчам {}", dto);
-
-        return dto;
+        return ModeStatsDto.builder()
+                .totalGames(total)
+                .wins(wins)
+                .losses(losses)
+                .winRate(winRate)
+                .build();
     }
 
     /**
@@ -119,7 +138,7 @@ public class StatsComponent {
      * @param matchIds список матчей
      * @return список матчей с полной информацией
      */
-    private List<RiotMatchResDto> fetchMatchesSequentiallyWithDelay(List<String> matchIds) {
+    private List<RiotMatchResDto> fetchMatches(List<String> matchIds) {
         List<RiotMatchResDto> result = new ArrayList<>();
 
         for (String matchId : matchIds) {
@@ -132,5 +151,27 @@ public class StatsComponent {
         }
 
         return result;
+    }
+
+    private void additionalLogs(List<RiotMatchResDto> matches) {
+        int normal = 0;
+        int soloq = 0;
+        int flex = 0;
+        int aram = 0;
+        int arena = 0;
+
+        for (RiotMatchResDto match: matches) {
+            if (match.getInfo().getQueueId() == 400) normal++;
+            if (match.getInfo().getQueueId() == 420) soloq++;
+            if (match.getInfo().getQueueId() == 440) flex++;
+            if (match.getInfo().getQueueId() == 450) aram++;
+            if (match.getInfo().getQueueId() == 1700) arena++;
+        }
+
+        log.info("NORMAL: " + normal);
+        log.info("SOLOQ: " + soloq);
+        log.info("FLEX: " + flex);
+        log.info("ARAM: " + aram);
+        log.info("ARENA: " + arena);
     }
 }

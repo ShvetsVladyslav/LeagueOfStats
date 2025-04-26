@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.los.leagueofstats.config.redis.CacheConfig.PROFILE_CACHE_NAME;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
@@ -46,7 +47,7 @@ public class ProfileComponent {
      * @param region регион League of Legends (например, RU)
      * @return краткий профиль с уровнем и рангами, или null, если игрок не найден
      */
-    @Cacheable(value = "profile", key = "#username + '#' + #tag + ':' + #region")
+    @Cacheable(value = PROFILE_CACHE_NAME, key = "#username + '#' + #tag + ':' + #region")
     public SummonerProfileDto getSummonerProfileCacheable(String username, String tag, LolRegion region) {
         checkArgument(isNotBlank(username), "Username is not specified!");
         checkArgument(isNotBlank(tag), "Tag is not specified!");
@@ -64,7 +65,7 @@ public class ProfileComponent {
      * @param profile профиль
      * @return добавляет кеш
      */
-    @CachePut(value = "profile", key = "#profile.puuid")
+    @CachePut(value = PROFILE_CACHE_NAME, key = "#profile.puuid")
     public SummonerProfileDto cacheByPuuid(SummonerProfileDto profile) {
         return profile;
     }
