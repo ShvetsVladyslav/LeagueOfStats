@@ -19,7 +19,9 @@ public enum TelegramBotCommands {
     /** Получение глобальной статистики (/globalstats <ник#тег>) */
     GLOBAL_STATS("/globalstats"),
     /** Показать общую статистику за всё время (/stats <ник#тег>) */
-    STATS("/stats");
+    STATS("/stats"),
+    /**  */
+    LAST_GAMES("/lastgames");
 
     private final String command;
 

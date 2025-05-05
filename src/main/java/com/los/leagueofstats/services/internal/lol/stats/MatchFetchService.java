@@ -7,6 +7,7 @@ import com.los.leagueofstats.services.integration.lol.dto.GetMatchIdsParamsDto;
 import com.los.leagueofstats.services.integration.lol.dto.RiotMatchResDto;
 import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -93,6 +94,11 @@ public class MatchFetchService {
         return getMaxCountMatchIds(puuid, region);
     }
 
+    @CacheEvict(value = GLOBAL_MATCHES_CACHE_NAME, key = "#puuid + ':' + #region", allEntries = true)
+    public void deleteMaxCountMatchIdsCache(String puuid, RiotRegion region) {
+
+    }
+
     /**
      * Получает все матчId игрока с учётом лимитов и параметров.
      */
@@ -164,6 +170,50 @@ public class MatchFetchService {
             GetMatchIdsParamsDto currentParams = GetMatchIdsParamsDto.builder()
                     .puuid(puuid)
                     .startTime(getStartOfCurrentSeasonTimestamp())
+                    .start(start)
+                    .count(currentBatch)
+                    .build();
+
+            List<String> batch = riotApiService.getMatchIdsByPuuid(currentParams, region);
+            log.debug("BATCH RESULT: " + batch.toString());
+
+            if (batch.isEmpty()) break;
+
+            result.addAll(batch);
+            start += currentBatch;
+            try {
+                Thread.sleep(1000); // пауза между батчами
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Получает N матчId игрока с учётом лимитов и параметров.
+     */
+    public List<String> getNCountMatchIds(
+            String puuid,
+            Integer matchCount,
+            RiotRegion region) {
+        checkArgument(isNotBlank(puuid), "PUUID is not specified!");
+        checkArgument(matchCount != null, "Match count is not specified!");
+        checkArgument(region != null, "Region is not specified!");
+
+        rateLimiter.acquire(); // подождёт, если лимит превышен
+        List<String> result = new ArrayList<>();
+
+        int start = 0;
+        int count = matchCount;
+        int max = matchCount;
+
+        while (result.size() < max) {
+            int currentBatch = Math.min(count, max - result.size());
+
+            GetMatchIdsParamsDto currentParams = GetMatchIdsParamsDto.builder()
+                    .puuid(puuid)
                     .start(start)
                     .count(currentBatch)
                     .build();

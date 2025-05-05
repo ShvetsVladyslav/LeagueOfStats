@@ -7,6 +7,7 @@ import com.los.leagueofstats.services.integration.lol.exceptions.RiotApiExceptio
 import com.los.leagueofstats.services.internal.lol.profile.ProfileComponent;
 import com.los.leagueofstats.services.internal.lol.profile.dto.SummonerProfileDto;
 import com.los.leagueofstats.services.internal.lol.stats.StatsComponent;
+import com.los.leagueofstats.services.internal.lol.stats.dto.DetailedMatchInfoDto;
 import com.los.leagueofstats.services.internal.lol.stats.dto.SummonerMatchStatsDto;
 import com.los.leagueofstats.utils.TelegramMessageUtils;
 import com.los.leagueofstats.web.dto.CommonWrapperResDto;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * REST контроллер для получения статистики по игрокам.
@@ -66,6 +68,44 @@ public class StatisticsController {
                     profileComponent.getSummonerProfileCacheable(reqDto.getUsername(), reqDto.getTag(), reqDto.getRegion());
 
             return new CommonWrapperResDto<>(statsComponent.collectGlobalStats(profileDto.getPuuid()));
+        } catch (RiotApiException exception) {
+            riotApiHelper.handleDefaultRiotException(exception);
+            throw exception;
+        } catch (Exception exception) {
+            log.error("UNEXPECTED ERROR: " + exception.getMessage());
+            throw exception;
+        }
+    }
+
+    @PostMapping("/last-matches")
+    public CommonWrapperResDto<List<DetailedMatchInfoDto>> getLastMatchesDetailedStatistic(
+            @RequestBody @Valid DefaultRiotIdReqWebDto reqDto) {
+        try {
+            SummonerProfileDto profileDto =
+                    profileComponent.getSummonerProfileCacheable(reqDto.getUsername(), reqDto.getTag(), reqDto.getRegion());
+
+            return new CommonWrapperResDto<>(statsComponent.collectLastMatchesDetailedStats(profileDto.getPuuid()));
+        } catch (RiotApiException exception) {
+            riotApiHelper.handleDefaultRiotException(exception);
+            throw exception;
+        } catch (Exception exception) {
+            log.error("UNEXPECTED ERROR: " + exception.getMessage());
+            throw exception;
+        }
+    }
+
+    @DeleteMapping("/matchIds/del-cache")
+    public CommonWrapperResDto clearMatchIdsCacheForPlayer(
+            @RequestParam String username,
+            @RequestParam String tag,
+            @RequestParam LolRegion region) {
+        try {
+            SummonerProfileDto profileDto =
+                    profileComponent.getSummonerProfileCacheable(username, tag, region);
+
+            statsComponent.deleteCacheGlobalStatsCache(profileDto.getPuuid(), RiotRegion.EUROPE);
+
+            return new CommonWrapperResDto<>();
         } catch (RiotApiException exception) {
             riotApiHelper.handleDefaultRiotException(exception);
             throw exception;
