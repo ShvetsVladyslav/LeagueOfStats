@@ -1,9 +1,10 @@
 package com.los.leagueofstats.services.internal.lol.stats;
 
+import com.google.common.collect.ImmutableList;
 import com.los.leagueofstats.services.integration.lol.dto.MatchInfoResDto;
 import com.los.leagueofstats.services.integration.lol.dto.MatchParticipantDto;
 import com.los.leagueofstats.services.integration.lol.dto.RiotMatchResDto;
-import com.los.leagueofstats.services.integration.lol.enums.LeagueQueueType;
+import com.los.leagueofstats.services.integration.lol.enums.RiotQueueType;
 import com.los.leagueofstats.services.integration.lol.enums.RiotRegion;
 import com.los.leagueofstats.services.internal.lol.stats.dto.ModeStatsDto;
 import com.los.leagueofstats.services.internal.lol.stats.dto.SummonerMatchStatsDto;
@@ -13,12 +14,21 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.los.leagueofstats.utils.CollectionUtilities.equalsAny;
+
 /**
  * Компонент для сбора статистики по матчам игрока.
  */
 @Log4j2
 @Component
 public class StatsComponent {
+
+    private static final List<Integer> RANKED_QUEUE_TYPE_IDS = ImmutableList.of(RiotQueueType.RANKED_SOLO_5x5.getQueueId());
+    private static final List<Integer> FLEX_QUEUE_TYPE_IDS = ImmutableList.of(RiotQueueType.RANKED_FLEX_SR.getQueueId());
+    private static final List<Integer> TOTAL_QUEUE_TYPE_IDS = ImmutableList.of(RiotQueueType.NORMAL_DRAFT_PICK.getQueueId(),
+            RiotQueueType.NORMAL_BLIND_PICK.getQueueId(),
+            RiotQueueType.RANKED_FLEX_SR.getQueueId(),
+            RiotQueueType.RANKED_SOLO_5x5.getQueueId());
 
     /** Сервис для получения ID и данных матчей */
     private final MatchFetchService matchFetchService;
@@ -43,12 +53,12 @@ public class StatsComponent {
 
         List<RiotMatchResDto> matches = fetchMatches(matchIds);
 
-        ModeStatsDto totalStats = aggregateStats(puuid, matches);
-        ModeStatsDto soloStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.SOLOQ));
-        ModeStatsDto flexStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.FLEX));
+        ModeStatsDto globalStats = aggregateStats(puuid, matches);
+        ModeStatsDto soloStats = aggregateStats(puuid, filterMatchesByQueue(matches, RANKED_QUEUE_TYPE_IDS));
+        ModeStatsDto flexStats = aggregateStats(puuid, filterMatchesByQueue(matches, FLEX_QUEUE_TYPE_IDS));
 
         return SummonerMatchStatsDto.builder()
-                .total(totalStats)
+                .total(globalStats)
                 .rankedSolo(soloStats)
                 .rankedFlex(flexStats)
                 .build();
@@ -62,16 +72,13 @@ public class StatsComponent {
         List<String> matchIds = matchFetchService.getCurrentSeasonMatchIdsCacheable(puuid, RiotRegion.EUROPE);
 
         //TODO fix statistic bug: Не фильтрует за текущий сезон
-        List<RiotMatchResDto> matches = fetchMatches(matchIds).stream()
-                .filter(match -> match.getInfo().getGameStartTimestamp() / 1000
-                        >= matchFetchService.getStartOfCurrentSeasonTimestamp())
-                .toList();
+        List<RiotMatchResDto> matches = fetchMatches(matchIds);
 
         additionalLogs(matches);
 
-        ModeStatsDto totalStats = aggregateStats(puuid, matches);
-        ModeStatsDto soloStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.SOLOQ));
-        ModeStatsDto flexStats = aggregateStats(puuid, filterMatchesByQueue(matches, LeagueQueueType.FLEX));
+        ModeStatsDto totalStats = aggregateStats(puuid, filterMatchesByQueue(matches, TOTAL_QUEUE_TYPE_IDS));
+        ModeStatsDto soloStats = aggregateStats(puuid, filterMatchesByQueue(matches, RANKED_QUEUE_TYPE_IDS));
+        ModeStatsDto flexStats = aggregateStats(puuid, filterMatchesByQueue(matches, FLEX_QUEUE_TYPE_IDS));
 
         return SummonerMatchStatsDto.builder()
                 .total(totalStats)
@@ -83,9 +90,9 @@ public class StatsComponent {
     /**
      * Отфильтровать матчи по нужному режиму игры.
      */
-    private List<RiotMatchResDto> filterMatchesByQueue(List<RiotMatchResDto> matches, LeagueQueueType queueType) {
+    private List<RiotMatchResDto> filterMatchesByQueue(List<RiotMatchResDto> matches, List<Integer> queueTypes) {
         return matches.stream()
-                .filter(match -> match.getInfo().getQueueId().equals(queueType.getRiotId()))
+                .filter(match -> equalsAny(queueTypes, match.getInfo().getQueueId()))
                 .toList();
     }
 

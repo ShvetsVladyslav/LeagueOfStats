@@ -133,15 +133,15 @@ public class GlobalStatisticsCommandHandler implements BotCommandHandler {
                 stats.getTotal().getLosses(),
                 stats.getTotal().getWinRate(),
 
-                stats.getTotal().getTotalGames(),
-                stats.getTotal().getWins(),
-                stats.getTotal().getLosses(),
-                stats.getTotal().getWinRate(),
+                stats.getRankedSolo().getTotalGames(),
+                stats.getRankedSolo().getWins(),
+                stats.getRankedSolo().getLosses(),
+                stats.getRankedSolo().getWinRate(),
 
-                stats.getTotal().getTotalGames(),
-                stats.getTotal().getWins(),
-                stats.getTotal().getLosses(),
-                stats.getTotal().getWinRate()
+                stats.getRankedFlex().getTotalGames(),
+                stats.getRankedFlex().getWins(),
+                stats.getRankedFlex().getLosses(),
+                stats.getRankedFlex().getWinRate()
         );
     }
 }

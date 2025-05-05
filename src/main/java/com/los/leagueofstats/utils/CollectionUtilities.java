@@ -394,4 +394,30 @@ public class CollectionUtilities {
         return (a, b) -> a;
     }
 
+    /**
+     *
+     *
+     * @param filters
+     * @param value
+     *
+     * @return
+     *
+     *
+     * @param <T>
+     * @param <S>
+     */
+    public static <T, S> boolean equalsAny(Collection<T> filters, S value) {
+        if (value == null || isEmpty(filters)) {
+            return false;
+        }
+
+        for (T filter : filters) {
+            if (filter.equals(value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }
